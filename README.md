@@ -10,8 +10,8 @@ Game name : Access Points
 All the city internet network is broken, you need to reconnect the nearest access points between them<br />
 &nbsp;<br />
 &nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O<br />
-&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\ &nbsp;&nbsp;<br />
-O&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O<br />
+&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\ &nbsp;&nbsp;<br />
+O&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O<br />
 
 ## Install
 
