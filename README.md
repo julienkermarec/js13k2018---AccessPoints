@@ -6,10 +6,10 @@ Library : Aframe
 
 ## Game
 
-All the city internet network is broken, you need to reconnect the nearest access points between them
-   O ---- O
-  /        \
-O           O ---- O
+All the city internet network is broken, you need to reconnect the nearest access points between them\n\n
+&nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O
+&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\
+O&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O
 ## Install
 
 Download this project
