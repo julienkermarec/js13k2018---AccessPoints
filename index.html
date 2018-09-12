@@ -1,0 +1,458 @@
+<html>
+<head>
+<script src="https://aframe.io/releases/0.6.0/aframe.min.js"></script>
+<script>
+// MINIFY WITH https://skalman.github.io/UglifyJS-online/
+//FONT ONLINE : kelsonsans
+//FONT OFFLINE : fonts/KelsonSans.fnt
+font = 'kelsonsans';
+offset = 20;
+box_per_level = 4;
+level = localStorage.getItem('level')?parseInt(localStorage.getItem('level')):1;
+best_score = localStorage.getItem('best_score')?parseInt(localStorage.getItem('best_score')):0;
+default_score = 'align:center; font: ' + font + '; width: 1; value: Best score: ';
+default_error = 'align:center; font: ' + font + '; width: 1; value: Level: ';
+started = false;
+
+function entierAleatoire(min, max)
+{
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function createObject(type, width, height, depth = null, position=null, rotation=null, color = null,opacity = null){
+  object = document.createElement(type);
+  object.setAttribute('width',width);
+  object.setAttribute('height',height);
+  object.setAttribute('depth',depth);
+  object.setAttribute('position',position);
+  object.setAttribute('rotation',rotation);
+  object.setAttribute('color',color);
+  object.setAttribute('opacity',opacity!= null?opacity:1);
+  return object;
+}
+
+function createAnimation(attribute, to, easing, delay, direction, dur,repeat){
+  animation = document.createElement('a-animation');
+  animation.setAttribute('attribute',attribute);
+  animation.setAttribute('to',to);
+  animation.setAttribute('easing',easing);
+  animation.setAttribute('delay',delay);
+  animation.setAttribute('direction',direction);
+  animation.setAttribute('dur',dur);
+  animation.setAttribute('repeat',repeat);
+  return animation;
+}
+
+function initGround(){
+  AFRAME.registerComponent('ground',{
+    init:function(){
+      this.el.appendChild(createObject('a-plane',45,45,null,offset/2 + ' -0.04 ' + offset/2,'-90 0 0','darkgreen'));
+      this.el.appendChild(createObject('a-plane',25,25,null,offset/2 + ' -0.02 ' + offset/2,'-90 0 0','dimgrey'));
+      this.el.appendChild(createObject('a-plane',20.5,20.5,null,offset/2 + ' -0.01 ' + offset/2,'-90 0 0','white'));
+      this.el.appendChild(createObject('a-plane',25.5,25.5,null,offset/2 + ' -0.03 ' + offset/2,'-90 0 0','white'));
+    }
+  })
+}
+function initQuartier(){
+  AFRAME.registerComponent('quartier',{
+    init:function(){
+      house_positions = [
+        {x:3,y:2,z:-7,color:'lightsteelblue',width:8,depth:5,rotation:-90,door:2},
+        {x:16,y:2,z:-7,color:'azure',width:8,depth:5,rotation:-90,door:2},
+        {x:27,y:2,z:3,color:'brown',width:5,depth:8,rotation:0,door:-2},
+        {x:27,y:2,z:16,color:'blue',width:5,depth:8,rotation:0,door:-2},
+        {x:16,y:2,z:27,color:'yellow',width:8,depth:5,rotation:90,door:-2},
+        {x:3,y:2,z:27,color:'purple',width:8,depth:5,rotation:90,door:-2},
+      ];
+      for(position of house_positions){
+        home = createObject('a-box',position.width,6,position.depth,position.x + ' ' + position.y + ' ' + position.z,null,position.color);
+        home.appendChild(createObject('a-box',position.width+2,0.5,position.depth+1,'0.5 -2 0',null,'black'));
+        this.el.appendChild(home);
+
+        width = position.width-0.02;
+        depth = position.depth-1;
+        pos = '0 3 0';
+        height = position.depth-2;
+        if(position.rotation !== 0){
+          width = position.depth-0.02;
+          depth = position.width-1;
+          pos = '0 3 0';
+          height = position.width-2;
+        }
+
+        home.appendChild(createObject('a-box',width,height,depth,pos,'-45 ' + position.rotation + ' 0','black'));
+        home.appendChild(createObject('a-box',2,3.3,2,'-2 -0.5 ' + position.door,'0 ' + (position.rotation+90) + ' 0','black'));
+        home.appendChild(createObject('a-box',(position.width-3),2,(position.depth-3),'-1.7 0.8 1','0 ' + (position.rotation+90) + ' 0','black',0.4));
+      }
+    }
+  })
+}
+function initCarrelage(){
+  AFRAME.registerComponent('carrelage',{
+    init:function(){
+      size = 20;
+      centered = size/2;
+      for(i = 0; i < size; i++){
+        for(j = 0; j < size; j++){
+          box = document.createElement('a-box');
+          x = (offset/2 + i-centered+0.5);
+          y = (offset/2 + j-centered+0.5);
+          position= x + " -10 " + y;
+          animation = createAnimation('position',x + ' 0 ' + y,'ease',(i-10)*1*(j-10)*2*3,'normal',2000,0);
+          box.setAttribute('color',((i+j)%2?'darkgray':'gray'));
+          box.setAttribute('position',position);
+          box.setAttribute('height','0.1');
+          this.el.appendChild(box);
+          box.appendChild(animation);
+        }
+      }
+    }
+  });
+}
+
+function initView(){
+  AFRAME.registerComponent('view',{
+    init:function(){
+      cables = [{color:'yellow',position_x:-0.075},{color:'blue',position_x:-0.025},{color:'green',position_x:0.025},{color:'brown',position_x:0.075}];
+      pins = [{position_x:-0.075},{position_x:-0.025},{position_x:0.025},{position_x:0.075}];
+
+      cable = createObject('a-box',0.25,0.5,0.3,'0 -0.6 0',null,'black',0);
+      cable.setAttribute('id','cable');
+      this.el.appendChild(cable);
+
+
+      text = createObject('a-plane',0.25,'auto',null,'-0.35 0.6 0.15',null,'black');
+      text.setAttribute('id','error');
+      text.setAttribute('text',default_error + level + '\nLives: ooo');
+      this.el.appendChild(text);
+      text = createObject('a-plane',0.35,'auto',null,'0.35 0.6 0.15',null,'black');
+      text.setAttribute('id','score');
+      text.setAttribute('text',default_score + best_score + '\nScore: '+ nb_active +'/'+ level*box_per_level);
+      this.el.appendChild(text);
+
+      for(i = 0; i < 4; i++){
+        cable.appendChild(createObject('a-box',0.030,0.8,0.1,cables[i].position_x + ' -0.32 0',null,cables[i].color));
+        cable.appendChild(createObject('a-box',0.030,0.1,0.2,pins[i].position_x + ' 0.12 -0.05',null,'black'));
+      }
+
+      plug = createObject('a-box',0.25,0.2,0.15,'0 0.1 0.05',null,'white',0.9);
+      cable.appendChild(plug);
+
+      text2 = createObject('a-plane',0.2,'auto',null,'0 0 0.15',null,'black');
+      text2.setAttribute('text','align:center; font: ' + font + '; width: 1.5; value: RJ45');
+      plug.appendChild(text2);
+    }
+  })
+}
+
+function click(){
+  cable = document.getElementById('cable');
+  cable.setAttribute('position','0 -0.3 0');
+  setTimeout(function(){
+    cable.setAttribute('position','0 -0.6 0');
+  },500);
+}
+
+function initCartons(){
+  AFRAME.registerComponent('cartons',{
+    schema: {type: 'int', default: 1},
+    update: function(){
+      if(started == false)
+        return;
+      box = {};
+      for(i = 0; i < (level*box_per_level); i++){
+        index = i;
+        x = entierAleatoire(1,19);
+        y = entierAleatoire(1,19);
+        r = entierAleatoire(0,45);
+
+        if(checker.indexOf(x + "-" + y) !== -1){
+          i--;
+        }
+        else {
+         checker.push(x + "-" + y);
+         routers.push({activated:i==0,id: x + "-" + y,x:x,y:y});
+          position= x + " 10 " + y;
+          rotation="0 " + r + " 0";
+          color = 'darkblue';
+          if(i == 0){
+            color = 'green';
+          }
+          box[i] = createObject('a-cylinder',1,1.3,1,position,'0',color,0.1);
+          box[i].setAttribute('radius','0.55');
+          box[i].setAttribute('id',x + ';' + y);
+          box[i].setAttribute('data-index',index);
+          box[i].setAttribute('data-id',x + ';' + y);
+          box[i].addEventListener('click', (evt) => {
+            if(started ==false)
+              return;
+            box_id = evt.srcElement.dataset.id;
+            box_index = evt.srcElement.dataset.index;
+            click();
+            checkBestCube(box_id,box_index);
+          });
+          animation = createAnimation('position',x + ' 0.5 ' + y,'ease',x*y*10,'alternate',1500,0.1);
+          box[i].appendChild(animation);
+
+          line = createObject('a-cylinder',0.3,0,null,'0 -0.6 0','-90 0 0',color,null);
+          line.setAttribute('radius','0.2');
+          box[i].appendChild(line);
+          this.el.appendChild(box[i]);
+
+          for(j = 0; j < 6; j++){
+            torus = createObject('a-torus',1,1,null,'0 ' + (j/6-0.3) + ' 0','90 0 0',(j%2?color:'white'),null);
+            torus.setAttribute('radius-tubular',0.2);
+            torus.setAttribute('radius','0.4');
+            torus.setAttribute('radius-tubular','0.05');
+            box[i].appendChild(torus);
+          }
+        }
+      }
+      bestCube(0);
+    }
+  });
+}
+
+function initCursor(){
+  AFRAME.registerComponent('cursor-listener', {
+    init: function () {
+      this.el.addEventListener('click',(evt) => {
+        click();
+      });
+    }
+  });
+}
+
+function checkBestCube(id, index){
+  if(!routers[index] || routers[index].activated)
+    return;
+
+  position = id.split(';');
+  for(best_point of best_points){
+    if(position[0] == best_point.x && position[1] == best_point.y){
+      cube = document.getElementById(id);
+      cube.setAttribute('color','green');
+      cube.querySelectorAll('a-torus[color="darkblue"]')[0].setAttribute("color","green")
+      cube.querySelectorAll('a-torus[color="darkblue"]')[0].setAttribute("color","green")
+      cube.querySelectorAll('a-torus[color="darkblue"]')[0].setAttribute("color","green")
+      old = active;
+      addLine(best_point,cube,old,position);
+      active = index;
+      nb_active++;
+      updateScore();
+      routers[index].activated = true;
+      if(nb_active == (level*box_per_level))
+        setTimeout(function(){
+          win();
+        },500);
+      else
+        bestCube(index);
+      return;
+    }
+  }
+
+  //ECHEC
+  cube = document.getElementById(id);
+  if(cube.querySelectorAll('a-torus[color="darkblue"]').length > 0){
+    cube.querySelectorAll('a-torus[color="darkblue"]')[0].setAttribute("color","red");
+    cube.querySelectorAll('a-torus[color="darkblue"]')[0].setAttribute("color","red");
+    cube.querySelectorAll('a-torus[color="darkblue"]')[0].setAttribute("color","red");
+  }
+  cube.setAttribute('color','red');
+  error++;
+  checkError();
+  setTimeout(function(){
+    cube.setAttribute('color','black');
+    if(cube.querySelectorAll('a-torus[color="red"]').length > 0){
+      cube.querySelectorAll('a-torus[color="red"]')[0].setAttribute("color","darkblue");
+      cube.querySelectorAll('a-torus[color="red"]')[0].setAttribute("color","darkblue");
+      cube.querySelectorAll('a-torus[color="red"]')[0].setAttribute("color","darkblue");
+    }
+  },500);
+}
+
+function checkError(){
+  text_error = (error == 0?'ooo':error == 1?'oo-':(error==2?'o--':'---'));
+  document.getElementById('error').setAttribute('text',default_error + level + '\nLives: '+ text_error);
+  if(error == 3)
+    lose();
+}
+function updateScore(){
+  if(nb_active > best_score)
+    best_score = nb_active;
+  document.getElementById('score').setAttribute('text',default_score + best_score + '\nScore: '+ nb_active +'/'+ level*box_per_level);
+}
+function addLine(point, active, old,old_position){
+  line = active.querySelector('a-cylinder');
+  x = (point.x + routers[old].x)/2;
+  y = (point.y + routers[old].y)/2;
+
+  tanx = point.x - routers[old].x;
+  tany = point.y - routers[old].y;
+  rotation = Math.atan2(tany, tanx) * 180 / Math.PI;
+  position_x = (routers[old].x - x);
+  position_y =  (routers[old].y - y);
+  line.setAttribute('position',position_x + ' 0 ' + position_y);// + (y - point.y));
+  line.setAttribute('rotation','-90 ' + (90 + rotation*-1) + ' 0');
+  line.setAttribute('color','green');
+  line.setAttribute('height',(point.distance-1));
+}
+
+function bestCube(index){
+  a=routers[index];
+  var min_distance = null;
+  for(b of routers){
+    if(!b.activated){
+      //Soient A(x,y) et  B(x,y) deux points dans le plan cartésien. Alors la distance AB sur le plan vaut :
+      // __________________________
+      // V (Bx - Ax)2 + (By - Ay)2
+      distance = Math.sqrt(Math.pow((b.x)-(a.x),2) + Math.pow((b.y)-(a.y),2));
+      if(min_distance == null || min_distance >= distance){
+        b.distance = distance;
+        if(min_distance == distance)
+          best_points.push(b);
+        else
+          best_points = [b];
+        min_distance = distance;
+      }
+    }
+  }
+}
+
+function win(){
+  showMessage('Yeah, you WIN !','white','Ready for next level ?','Go to next level');
+}
+
+function lose(){
+  showMessage('GAME OVER','brown','Do you want to restart ?','Restart');
+}
+
+function showMessage(title, color, message, button){
+  //SET CAMERA
+  document.getElementById('camera').setAttribute('rotation','0 -90 0');
+  document.getElementById('camera').setAttribute('position','-5 1.8 10');
+  //SET TEXT
+  document.getElementById('text_1').setAttribute("text","value:" + title + ";color:" + color + "");
+  document.getElementById('text_2').setAttribute("text","value:" + message + "");
+  document.getElementById('text_3').setAttribute("text","value:" + button + "");
+  var animation = createAnimation('position','-2 1.8 10','ease',0,'normal',500,0);
+  document.getElementById('play').appendChild(animation);
+}
+
+function restart(){
+  document.getElementById('cartons').innerHTML = "";
+  initVars();
+  updateScore();
+  checkError();
+  setTimeout(() =>{
+    document.getElementById('cartons').setAttribute('cartons',(Math.random()*100).toString());
+  },400);
+  // accessPoints.setAttribute('data-level','dfsdf');
+}
+
+function initPlay(){
+  AFRAME.registerComponent('play',{
+    init:function(){
+      box = createObject('a-box',0.5,2,3,'0 -10 10',null,'dimgrey',0.95);
+      animation = createAnimation('position','-2 1.8 10','ease',1000,'normal',2000,0);
+      box.setAttribute('id','play');
+      box.appendChild(animation);
+      this.el.appendChild(box);
+
+      pied = createObject('a-cylinder',1,1,1,'0 -1.5 -1.2','0','black',0.9);
+      pied.setAttribute('radius','0.15');
+      box.appendChild(pied);
+      pied = createObject('a-cylinder',1,1,1,'0 -1.5 1.2','0','black',0.9);
+      pied.setAttribute('radius','0.15');
+      box.appendChild(pied);
+
+      text1 = createObject('a-plane',2.4,'auto','0','-0.3 0.7 0.05','0 -90 0','dimgrey',0.95);
+      text1.setAttribute('id','text_1');
+      text1.setAttribute('text','align:center; color : brown; font: ' + font + '; width: 6; value: Access Point');
+      box.appendChild(text1);
+
+      text2 = createObject('a-plane',2.4,'auto','0','-0.3 0.15 0.05','0 -90 0','dimgrey',0.95);
+      text2.setAttribute('id','text_2');
+      text2.setAttribute('text','align:center; color : white; font: ' + font + '; width: 2.8; value: All the city internet network is broken, you need to reconnect the nearest access points between them');
+      box.appendChild(text2);
+
+      plug = createObject('a-box',2.5,0.5,0.15,'-0.3 -0.5 0.05','0 -90 0','white',0.9);
+      box.appendChild(plug);
+
+      text3 = createObject('a-plane',2.4,'auto',null,'0 0.05 0.10',null,'white',0.9);
+      text3.setAttribute('id','text_3');
+      text3.setAttribute('text','align:center; color : green; font: ' + font + '; width: 6; value: Play');
+      plug.appendChild(text3);
+
+      text3.addEventListener('click',(evt) => {
+        document.getElementById('play').setAttribute('position','0 -10 10');
+        document.getElementById('camera').setAttribute('wasd-controls','');
+        if(!started){
+          level = 1;
+          started = true;
+        }
+        else {
+          level = (error == 3)?1:level+1;
+        }
+        localStorage.setItem('level',level);
+        restart();
+      })
+    }
+  });
+}
+
+function initVars(){
+  checker = [];
+  routers = [];
+  best_points = [];
+  active = 0;
+  score = 0;
+  error = 0;
+  nb_active = 1;
+}
+
+initVars();
+initGround();
+initQuartier();
+initCarrelage();
+initPlay();
+initCursor();
+initView();
+initCartons();
+</script>
+</head>
+<body>
+  <a-scene>
+    <a-assets>
+    </a-assets>
+    <a-entity ground></a-entity>
+    <a-entity quartier></a-entity>
+    <a-entity play></a-entity>
+    <a-entity cursor-listener carrelage></a-entity>
+    <a-entity box></a-entity>
+    <a-entity id="cartons" cartons="0"></a-entity>
+    <a-sky color="#393939" ></a-sky>
+    <a-entity id="camera" camera="active: true"  rotation="0 -90 0" position="-5 2 10" wasd-controls look-controls data-aframe-default-camera>
+      <a-cursor color="white">
+        <a-entity view></a-entity>
+      </a-cursor>
+    </a-entity>
+  </a-scene>
+  <div class="copyright">Made by <a target="_blank" href="https://www.julienkermarec.com/">Julien KERMAREC</a> for <a target="_blank" href="http://js13kgames.com/">js13kGames Competition</a>.</div>
+  <style>
+  .copyright{
+    position : absolute; bottom : 0px; left : 0px; padding : 10px 15px; color : #FFF; background-color : #000;
+
+    font : 400 0.7rem/1.3 Helvetica,Arial,sans-serif;
+
+  }
+  .copyright a:-webkit-any-link {
+      cursor: pointer;
+      text-decoration: none !important;
+      color : #FFF !important;
+      font-weight : bold;
+    }
+  }
+  </style>
+</body>
+</html>
