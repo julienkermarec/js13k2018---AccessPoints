@@ -2,14 +2,15 @@
 
 WebXR category for the [js13kGames Competition](http://js13kgames.com/).<br />
 Theme : Offline<br />
-Library : Aframe<br />
+Library : [Aframe](https://aframe.io/).<br />
+Game name : Access Points
 
 ## Game
 
 All the city internet network is broken, you need to reconnect the nearest access points between them<br />
 &nbsp;<br />
 &nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O<br />
-&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\&nbsp;&nbsp;<br />
+&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\ &nbsp;&nbsp;<br />
 O&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;O&nbsp;----&nbsp;O<br />
 
 ## Install
